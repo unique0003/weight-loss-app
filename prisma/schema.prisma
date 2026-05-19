@@ -1,0 +1,80 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------
+// Enums (กำหนดค่าคงที่เพื่อป้องกันการพิมพ์ผิดใน Database)
+// -------------------------------------------------
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+// -------------------------------------------------
+// Models
+// -------------------------------------------------
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  gender      Gender   
+  birthYear   Int      // ใช้ปีเกิดเพื่อนำไปคำนวณอายุอัตโนมัติ (ปัจจุบัน - ปีเกิด)
+  height      Float    // ส่วนสูง (cm) - ควรอัปเดตได้
+  
+  // Relations
+  weightLogs  WeightLog[]
+  foodLogs    FoodLog[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WeightLog {
+  id          String   @id @default(uuid())
+  userId      String
+  
+  weight      Float    // น้ำหนัก ณ วันที่บันทึก (kg)
+  bmi         Float    // ค่า BMI ที่คำนวณได้ ณ ตอนนั้น
+  
+  // Relation
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  recordedAt  DateTime @default(now()) // วันที่บันทึกข้อมูล
+
+  // Index เพื่อให้ดึงข้อมูลประวัติน้ำหนักของ User ได้เร็วขึ้น
+  @@index([userId])
+}
+
+model FoodLog {
+  id          String   @id @default(uuid())
+  userId      String
+  
+  mealType    MealType
+  foodName    String
+  calories    Int      // แคลอรีที่คำนวณได้จาก AI
+  imageUrl    String?  // ลิงก์รูปภาพที่อัปโหลด (เก็บเป็น URL จาก Storage)
+  
+  // Relation
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  recordedAt  DateTime @default(now()) // วันที่บันทึกการกิน
+
+  @@index([userId])
+  @@index([recordedAt]) // Index ไว้สำหรับการดึงข้อมูลสรุปแคลอรี "รายวัน" ให้เร็วขึ้น
+}
