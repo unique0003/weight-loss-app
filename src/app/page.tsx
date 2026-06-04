@@ -3,8 +3,10 @@ import FoodImageUploader from '@/components/features/FoodImageUploader';
 import BmiCalculatorForm from '@/components/features/BmiCalculatorForm';
 import Link from 'next/link';
 import { LayoutDashboard, Activity } from 'lucide-react';
+import { getCurrentUserId } from '@/lib/auth-util';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const userId = await getCurrentUserId();
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white pb-20">
       {/* Navigation ด้านบน */}
@@ -42,8 +44,8 @@ export default function HomePage() {
               </div>
               <h2 className="text-2xl font-bold text-gray-100">การวิเคราะห์ดัชนีมวลกาย</h2>
             </div>
-            <div className="max-w-4xl mx-auto">
-              <BmiCalculatorForm />
+            <div className="bg-[#111113] border border-gray-800 rounded-3xl p-6 shadow-2xl">
+              <BmiCalculatorForm userId={userId} />
             </div>
           </section>
 
@@ -58,7 +60,7 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold text-gray-100">AI Calorie Scanner</h2>
             </div>
             <div className="max-w-2xl mx-auto">
-              <FoodImageUploader />
+              <FoodImageUploader userId={userId} />
             </div>
           </section>
 

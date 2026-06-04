@@ -4,14 +4,18 @@
 import { useState, useEffect } from 'react';
 import { Calculator, Trash2, CheckCircle2, LayoutTemplate } from 'lucide-react';
 import { calculateBMI, getBMICategory, calculateBMR, calculateCalorieGoal } from '@/utils/calculations';
+import { addWeightLog, upsertUserProfile } from '@/actions/user';
 
-export default function BmiCalculatorForm() {
+export default function BmiCalculatorForm({ userId }: { userId: string }) {
   const [mounted, setMounted] = useState(false);
   const [weight, setWeight] = useState<string>('');
   const [height, setHeight] = useState<string>('');
   const [age, setAge] = useState<string>('');
   const [gender, setGender] = useState<'MALE' | 'FEMALE'>('MALE');
   
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
   const [result, setResult] = useState<{
     bmi: number;
     category: string;
@@ -39,7 +43,7 @@ export default function BmiCalculatorForm() {
     }
   }, []);
 
-  const handleCalculate = (e: React.FormEvent) => {
+  const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const w = parseFloat(weight);
@@ -47,6 +51,9 @@ export default function BmiCalculatorForm() {
     const a = parseInt(age);
 
     if (w > 0 && h > 0 && a > 0) {
+      setIsSubmitting(true);
+      setDbStatus('saving');
+
       const bmi = calculateBMI(w, h);
       const category = getBMICategory(bmi);
       const bmr = calculateBMR(w, h, a, gender);
@@ -67,6 +74,35 @@ export default function BmiCalculatorForm() {
       localStorage.setItem('bmi_calc_v1', JSON.stringify({
         weight, height, age, gender, result: newResult
       }));
+
+      // บันทึกข้อมูลลงฐานข้อมูลจริง
+      try {
+        const birthYear = new Date().getFullYear() - a;
+        const profileRes = await upsertUserProfile({
+          userId,
+          name: 'ผู้ใช้งานทั่วไป',
+          gender: gender,
+          birthYear: birthYear,
+          height: h
+        });
+
+        if (!profileRes.success) {
+          throw new Error(profileRes.error);
+        }
+
+        // 2. บันทึกข้อมูลประวัติน้ำหนัก
+        const weightRes = await addWeightLog(userId, w);
+        if (weightRes.success) {
+          setDbStatus('saved');
+        } else {
+          throw new Error(weightRes.error);
+        }
+      } catch (err) {
+        console.error("Error saving weight log/profile to DB:", err);
+        setDbStatus('error');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -77,6 +113,7 @@ export default function BmiCalculatorForm() {
     setAge('');
     setGender('MALE');
     setResult(null);
+    setDbStatus('idle');
     localStorage.removeItem('bmi_calc_v1');
   };
 
@@ -100,11 +137,12 @@ export default function BmiCalculatorForm() {
   if (!mounted) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 font-sans">
       
       {/* 🚀 FORM CARD */}
-      <div className="bg-[#1e1e1e] border border-gray-800 rounded-2xl p-6 shadow-2xl">
-        <div className="flex items-center text-gray-200 font-medium mb-6">
+      <div className="bg-[#111113] border border-gray-805 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl"></div>
+        <div className="flex items-center text-gray-200 font-bold mb-6 tracking-wide uppercase text-xs">
           <LayoutTemplate size={18} className="text-orange-500 mr-2" />
           BMI & calorie calculator
         </div>
@@ -112,36 +150,36 @@ export default function BmiCalculatorForm() {
         <form onSubmit={handleCalculate} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">น้ำหนัก (kg)</label>
+              <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">น้ำหนัก (kg)</label>
               <input 
-                type="number" step="0.1" required
-                className="w-full px-4 py-2.5 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                type="number" step="0.1" required disabled={isSubmitting}
+                className="w-full px-4 py-2.5 bg-[#17171a] border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-mono font-semibold"
                 value={weight} onChange={(e) => setWeight(e.target.value)}
               />
             </div>
             
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">ส่วนสูง (cm)</label>
+              <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">ส่วนสูง (cm)</label>
               <input 
-                type="number" step="0.1" required
-                className="w-full px-4 py-2.5 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                type="number" step="0.1" required disabled={isSubmitting}
+                className="w-full px-4 py-2.5 bg-[#17171a] border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-mono font-semibold"
                 value={height} onChange={(e) => setHeight(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">อายุ (ปี)</label>
+              <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">อายุ (ปี)</label>
               <input 
-                type="number" required
-                className="w-full px-4 py-2.5 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                type="number" required disabled={isSubmitting}
+                className="w-full px-4 py-2.5 bg-[#17171a] border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-mono font-semibold"
                 value={age} onChange={(e) => setAge(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">เพศ</label>
-              <select 
-                className="w-full px-4 py-2.5 bg-[#2a2a2a] border border-gray-700 rounded-lg text-white focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all appearance-none"
+              <label className="block text-[10px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">เพศ</label>
+              <select disabled={isSubmitting}
+                className="w-full px-4 py-2.5 bg-[#17171a] border border-gray-800 rounded-xl text-white focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all appearance-none font-bold"
                 value={gender} onChange={(e) => setGender(e.target.value as 'MALE' | 'FEMALE')}
               >
                 <option value="MALE">ชาย</option>
@@ -151,31 +189,55 @@ export default function BmiCalculatorForm() {
           </div>
 
           <button 
-            type="submit"
-            className="w-full flex items-center justify-center border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white py-3 rounded-lg transition-colors mt-2 text-sm font-medium"
+            type="submit" disabled={isSubmitting}
+            className={`w-full flex items-center justify-center border text-xs font-bold py-3.5 rounded-xl transition-all mt-2 uppercase tracking-widest ${
+              isSubmitting 
+                ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-wait'
+                : 'border-orange-500/20 hover:border-orange-500 bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white shadow-md'
+            }`}
           >
-            <Calculator size={16} className="mr-2" /> คำนวณ
+            <Calculator size={16} className="mr-2" />
+            {isSubmitting ? 'กำลังคำนวณและบันทึก...' : 'คำนวณและบันทึก'}
           </button>
         </form>
       </div>
 
       {/* 🚀 RESULT CARD */}
       {result && (
-        <div className="bg-[#1e1e1e] border border-gray-800 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-[#111113] border border-gray-850 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center text-gray-200 font-medium">
+            <div className="flex items-center text-gray-200 font-bold uppercase tracking-wider text-xs">
               <LayoutTemplate size={18} className="text-orange-500 mr-2" />
-              ผลการวิเคราะห์
+              ผลการวิเคราะห์ร่างกาย
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center text-xs text-green-500">
-                <CheckCircle2 size={14} className="mr-1" /> บันทึกแล้ว
-              </span>
+            
+            <div className="flex items-center space-x-3">
+              {dbStatus === 'saving' && (
+                <span className="flex items-center text-[10px] text-yellow-500 font-bold animate-pulse">
+                  ⌛ กำลังบันทึกลงฐานข้อมูล...
+                </span>
+              )}
+              {dbStatus === 'saved' && (
+                <span className="flex items-center text-[10px] text-green-500 font-bold">
+                  <CheckCircle2 size={12} className="mr-1" /> บันทึก Database จริงแล้ว
+                </span>
+              )}
+              {dbStatus === 'error' && (
+                <span className="flex items-center text-[10px] text-red-500 font-bold animate-bounce">
+                  ⚠️ เซฟลงเซิร์ฟเวอร์ล้มเหลว
+                </span>
+              )}
+              {dbStatus === 'idle' && (
+                <span className="flex items-center text-[10px] text-gray-400 font-bold">
+                  💾 บันทึก Browser
+                </span>
+              )}
+
               <button 
                 onClick={handleClear}
-                className="flex items-center text-xs text-gray-400 hover:text-red-400 border border-gray-700 hover:border-red-500/50 px-3 py-1.5 rounded-md transition-colors"
+                className="flex items-center text-[10px] font-bold text-gray-400 hover:text-red-400 border border-gray-800 hover:border-red-500/30 px-3 py-1.5 rounded-xl transition-all"
               >
-                <Trash2 size={14} className="mr-1" /> ล้างข้อมูล
+                <Trash2 size={12} className="mr-1" /> ล้างข้อมูล
               </button>
             </div>
           </div>

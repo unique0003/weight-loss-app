@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,10 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      {/* เพิ่ม suppressHydrationWarning ตรงนี้ครับ */}
+    <html lang="en" suppressHydrationWarning>
+      {/* เพิ่ม suppressHydrationWarning ตรงนี้ด้วยครับ */}
       <body className={inter.className} suppressHydrationWarning>
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

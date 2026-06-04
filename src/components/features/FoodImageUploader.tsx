@@ -5,10 +5,31 @@ import { useState, useEffect } from 'react';
 import { analyzeAndSaveFoodLog } from '@/actions/food';
 import { Sun, Moon, Coffee } from 'lucide-react';
 
-export default function FoodImageUploader() {
+type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+
+interface FoodImageUploaderProps {
+  userId: string;
+  externalMealType?: MealType;
+  onMealTypeChange?: (meal: MealType) => void;
+}
+
+export default function FoodImageUploader({
+  userId,
+  externalMealType,
+  onMealTypeChange
+}: FoodImageUploaderProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [base64Image, setBase64Image] = useState<string | null>(null);
-  const [mealType, setMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH');
+  
+  const [internalMealType, setInternalMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH');
+  const mealType = externalMealType !== undefined ? externalMealType : internalMealType;
+  const setMealType = (newMeal: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK') => {
+    if (onMealTypeChange) {
+      onMealTypeChange(newMeal);
+    } else {
+      setInternalMealType(newMeal);
+    }
+  };
 
   const [foodNameInput, setFoodNameInput] = useState('');
   const [ingredientsInput, setIngredientsInput] = useState('');
@@ -80,10 +101,8 @@ export default function FoodImageUploader() {
     setError(null);
     setResult(null);
 
-    const dummyUserId = 'test-user-id-123';
-
     try {
-      const response = await analyzeAndSaveFoodLog(dummyUserId, mealType, base64Image, {
+      const response = await analyzeAndSaveFoodLog(userId, mealType, base64Image, {
         name: foodNameInput.trim() !== '' ? foodNameInput : undefined,
         ingredients: ingredientsInput.trim() !== '' ? ingredientsInput : undefined,
         portion: portionInput.trim() !== '' ? portionInput : undefined,
@@ -226,6 +245,7 @@ export default function FoodImageUploader() {
               value={foodNameInput}
               onChange={(e) => setFoodNameInput(e.target.value)}
               className="w-full px-4 py-2.5 text-base font-medium text-white placeholder-gray-600 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-[#0a0a0a] transition-colors"
+              suppressHydrationWarning
             />
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -234,6 +254,7 @@ export default function FoodImageUploader() {
                 value={ingredientsInput}
                 onChange={(e) => setIngredientsInput(e.target.value)}
                 className="w-full px-4 py-2.5 text-base font-medium text-white placeholder-gray-600 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-[#0a0a0a] transition-colors"
+                suppressHydrationWarning
               />
               <input
                 type="text"
@@ -241,6 +262,7 @@ export default function FoodImageUploader() {
                 value={portionInput}
                 onChange={(e) => setPortionInput(e.target.value)}
                 className="w-full px-4 py-2.5 text-base font-medium text-white placeholder-gray-600 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-[#0a0a0a] transition-colors"
+                suppressHydrationWarning
               />
             </div>
           </div>
