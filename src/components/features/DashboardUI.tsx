@@ -24,6 +24,7 @@ import {
   LogIn, 
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { deleteFoodLog } from '@/actions/food';
 import { addWeightLog, deleteWeightLog, upsertUserProfile } from '@/actions/user';
 import { calculateBMR, calculateCalorieGoal, calculateBMI, getBMICategory } from '@/utils/calculations';
@@ -279,9 +280,9 @@ export default function DashboardUI({
         </div>
         
         <nav className="flex space-x-2 bg-[#050506] p-1 rounded-xl border border-gray-800 items-center">
-          <button onClick={() => router.push('/')} className="flex items-center text-gray-400 hover:text-white px-4 py-2 rounded-lg transition-all font-bold text-xs uppercase tracking-wider">
+          <Link href="/" className="flex items-center text-gray-400 hover:text-white px-4 py-2 rounded-lg transition-all font-bold text-xs uppercase tracking-wider">
             <Home size={14} className="mr-2"/> หน้าหลัก
-          </button>
+          </Link>
           
           {isLoggedIn ? (
             <button 
@@ -755,10 +756,10 @@ export default function DashboardUI({
 
       {/* 📱 Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0a0a0b]/90 backdrop-blur-xl border-t border-gray-800/80 z-50 flex justify-around items-center p-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]">
-        <button onClick={() => router.push('/')} className="flex flex-col items-center p-2 text-gray-500 hover:text-white transition-colors cursor-pointer">
+        <Link href="/" className="flex flex-col items-center p-2 text-gray-500 hover:text-white transition-colors cursor-pointer">
           <Home size={20} />
           <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">หน้าหลัก</span>
-        </button>
+        </Link>
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center text-orange-500 relative -top-3 cursor-pointer">
           <div className="bg-gradient-to-tr from-orange-600 to-yellow-500 p-3 rounded-full shadow-[0_4px_25px_rgba(249,115,22,0.4)] text-white">
             <LayoutDashboard size={22} />
