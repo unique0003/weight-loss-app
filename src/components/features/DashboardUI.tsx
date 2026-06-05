@@ -20,6 +20,8 @@ import {
   Scale, 
   Activity, 
   Plus, 
+  LogOut,
+  LogIn, 
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { deleteFoodLog } from '@/actions/food';
@@ -753,16 +755,27 @@ export default function DashboardUI({
 
       {/* 📱 Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0a0a0b]/90 backdrop-blur-xl border-t border-gray-800/80 z-50 flex justify-around items-center p-2 pb-safe shadow-[0_-10px_25px_rgba(0,0,0,0.8)]">
-        <button onClick={() => router.push('/')} className="flex flex-col items-center p-2 text-gray-500 hover:text-white transition-colors">
+        <button onClick={() => router.push('/')} className="flex flex-col items-center p-2 text-gray-500 hover:text-white transition-colors cursor-pointer">
           <Home size={20} />
           <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">หน้าหลัก</span>
         </button>
-        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center text-orange-500 relative -top-3">
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center text-orange-500 relative -top-3 cursor-pointer">
           <div className="bg-gradient-to-tr from-orange-600 to-yellow-500 p-3 rounded-full shadow-[0_4px_25px_rgba(249,115,22,0.4)] text-white">
             <LayoutDashboard size={22} />
           </div>
           <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">แดชบอร์ด</span>
         </button>
+        {isLoggedIn ? (
+          <button onClick={() => signOut()} className="flex flex-col items-center p-2 text-gray-500 hover:text-red-400 transition-colors cursor-pointer">
+            <LogOut size={20} />
+            <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">ออกระบบ</span>
+          </button>
+        ) : (
+          <button onClick={() => setIsLoginModalOpen(true)} className="flex flex-col items-center p-2 text-gray-500 hover:text-white transition-colors cursor-pointer">
+            <LogIn size={20} />
+            <span className="text-[9px] mt-1 font-bold tracking-wider uppercase">เข้าสู่ระบบ</span>
+          </button>
+        )}
       </div>
 
       {/* ล็อคอิน Modal */}
